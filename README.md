@@ -150,9 +150,6 @@ riot-account-manager/
 └── requirements.txt       # Python dependencies
 ```
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
@@ -161,16 +158,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ## Disclaimer
 
 This application is not endorsed by Riot Games and does not reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
-
-## Support
-
-If you encounter any issues or have questions, please open an issue on GitHub.
-
-## Changelog
-
-### Version 1.0.0
-- Initial release
-- Account management
-- Live game tracking
-- Summoner spell tracker
-- Auto-update system
