@@ -77,7 +77,7 @@ class UpdateChecker:
     
     def download_and_install_update(self, exe_url, progress_callback=None):
         """
-        Download the new version and install it
+        Download and install update (works with --onefile PyInstaller)
         
         Args:
             exe_url: Direct download URL for the .exe file
@@ -87,9 +87,22 @@ class UpdateChecker:
             bool: True if successful, False otherwise
         """
         try:
-            # Download to temp directory
-            temp_dir = tempfile.gettempdir()
-            temp_exe = os.path.join(temp_dir, "RiotAccountManager_update.exe")
+            # Get the actual exe location (not temp for --onefile)
+            if getattr(sys, 'frozen', False):
+                # For --onefile, sys.executable points to temp location
+                # We need to find the actual exe location
+                import __main__
+                if hasattr(__main__, '__file__'):
+                    current_exe = os.path.abspath(__main__.__file__)
+                else:
+                    # Fallback: use sys.argv[0]
+                    current_exe = os.path.abspath(sys.argv[0])
+            else:
+                current_exe = os.path.abspath(__file__)
+            
+            # Download to same directory as current exe
+            exe_dir = os.path.dirname(current_exe)
+            temp_exe = os.path.join(exe_dir, "RiotAccountManager_update.exe")
             
             # Download with progress
             response = requests.get(exe_url, stream=True, timeout=30)
@@ -104,32 +117,48 @@ class UpdateChecker:
                         if progress_callback:
                             progress_callback(downloaded, total_size)
             
-            # Create update script
-            if getattr(sys, 'frozen', False):
-                # Running as exe
-                current_exe = sys.executable
-            else:
-                # Running as script (for testing)
-                current_exe = os.path.abspath(__file__)
-            
-            # Create batch script to replace exe and restart
-            batch_script = os.path.join(temp_dir, "update_riot_manager.bat")
+            # Create update batch script with visible window for debugging
+            batch_script = os.path.join(exe_dir, "update.bat")
             with open(batch_script, 'w') as f:
                 f.write('@echo off\n')
-                f.write('echo Updating Riot Account Manager...\n')
-                f.write('timeout /t 2 /nobreak > nul\n')  # Wait for app to close
+                f.write('title Riot Account Manager Update\n')
+                f.write('echo ========================================\n')
+                f.write('echo Riot Account Manager Update\n')
+                f.write('echo ========================================\n')
+                f.write('echo.\n')
+                f.write('echo Waiting for application to close...\n')
+                f.write('timeout /t 5 /nobreak\n')
+                f.write('echo.\n')
+                f.write('echo Updating executable...\n')
+                f.write(f':retry\n')
+                f.write(f'del /F /Q "{current_exe}" 2>nul\n')
+                f.write(f'if exist "{current_exe}" (\n')
+                f.write(f'    echo Waiting for file to unlock...\n')
+                f.write(f'    timeout /t 2 /nobreak > nul\n')
+                f.write(f'    goto retry\n')
+                f.write(f')\n')
                 f.write(f'move /Y "{temp_exe}" "{current_exe}"\n')
-                f.write('echo Update complete! Restarting...\n')
-                f.write('timeout /t 1 /nobreak > nul\n')
+                f.write(f'if not exist "{current_exe}" (\n')
+                f.write(f'    echo ERROR: Update failed!\n')
+                f.write(f'    pause\n')
+                f.write(f'    exit\n')
+                f.write(f')\n')
+                f.write('echo.\n')
+                f.write('echo Update successful!\n')
+                f.write('echo Restarting application...\n')
+                f.write('timeout /t 2 /nobreak\n')
+                f.write(f'cd /d "{exe_dir}"\n')
                 f.write(f'start "" "{current_exe}"\n')
-                f.write(f'del "%~f0"\n')  # Delete the batch script itself
+                f.write(f'del "%~f0"\n')
             
-            # Run the batch script and exit
+            # Run batch script
             subprocess.Popen(['cmd', '/c', batch_script], 
-                           creationflags=subprocess.CREATE_NO_WINDOW)
+                           cwd=exe_dir)
             
             return True
             
         except Exception as e:
             print(f"Error downloading/installing update: {e}")
+            import traceback
+            traceback.print_exc()
             return False

@@ -12,11 +12,11 @@ if os.path.exists('build'):
 if os.path.exists('dist'):
     shutil.rmtree('dist')
 
-# PyInstaller arguments
+# PyInstaller arguments - using --onedir to avoid temp directory warnings
 PyInstaller.__main__.run([
     'main.py',
     '--name=RiotAccountManager',
-    '--onefile',
+    '--onedir',  # Directory mode - no temp folder warnings
     '--windowed',  # No console window
     '--icon=assets/rose.ico',
     '--add-data=assets;assets',  # Include assets folder
@@ -28,5 +28,6 @@ PyInstaller.__main__.run([
 
 print("\n" + "="*50)
 print("Build complete!")
-print("Executable location: dist/RiotAccountManager.exe")
+print("Executable location: dist/RiotAccountManager/RiotAccountManager.exe")
+print("\nTo distribute: Zip the entire 'dist/RiotAccountManager' folder")
 print("="*50)

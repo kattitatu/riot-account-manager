@@ -113,7 +113,6 @@ class UpdateDialog:
             )
             
             if success:
-                # Close the app to allow update
                 self.dialog.after(0, self.close_and_update)
             else:
                 self.dialog.after(0, lambda: messagebox.showerror(
@@ -139,7 +138,7 @@ class UpdateDialog:
     def close_and_update(self):
         """Close the application to allow update"""
         messagebox.showinfo("Update Ready", 
-                           "Update downloaded! The application will now restart to complete the update.")
+                           "Update downloaded! The application will now close and restart with the new version.")
         self.dialog.destroy()
         # Exit the entire application
         sys.exit(0)

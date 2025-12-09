@@ -915,11 +915,21 @@ class MainWindow:
     def check_for_updates(self):
         """Check for updates in background"""
         def check():
-            has_update, latest_version, download_url, release_notes, exe_url = self.update_checker.check_for_updates()
-            
-            if has_update:
-                # Show update dialog on main thread
-                self.root.after(0, lambda: self.show_update_dialog(latest_version, download_url, release_notes, exe_url))
+            try:
+                print("Checking for updates...")
+                has_update, latest_version, download_url, release_notes, exe_url = self.update_checker.check_for_updates()
+                print(f"Update check result: has_update={has_update}, latest={latest_version}, current={__version__}")
+                
+                if has_update:
+                    print("Update available! Showing dialog...")
+                    # Show update dialog on main thread
+                    self.root.after(0, lambda: self.show_update_dialog(latest_version, download_url, release_notes, exe_url))
+                else:
+                    print("No update available")
+            except Exception as e:
+                print(f"Error checking for updates: {e}")
+                import traceback
+                traceback.print_exc()
         
         # Run check in background thread
         thread = threading.Thread(target=check, daemon=True)
