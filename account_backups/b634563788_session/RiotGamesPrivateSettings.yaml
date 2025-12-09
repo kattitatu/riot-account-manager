@@ -1,0 +1,72 @@
+riot-login:
+    persist:
+        region: "EUW"
+        scopes:
+        - "openid"
+        - "link"
+        - "ban"
+        - "lol_region"
+        - "lol"
+        - "summoner"
+        - "offline_access"
+        session:
+            cookies:
+            -   domain: "auth.riotgames.com"
+                hostOnly: true
+                httpOnly: true
+                name: "asid"
+                path: "/"
+                persistent: false
+                secureOnly: true
+                value: "qBaYFp-0LSSjvL7HW58f4lYq6XVMXtIFylIpFsHDkRw"
+            -   domain: "auth.riotgames.com"
+                hostOnly: true
+                httpOnly: true
+                name: "ccid"
+                path: "/"
+                persistent: true
+                secureOnly: true
+                value: "riot-client"
+            -   domain: "auth.riotgames.com"
+                hostOnly: true
+                httpOnly: true
+                name: "clid"
+                path: "/"
+                persistent: true
+                secureOnly: true
+                value: "ec1"
+            -   domain: "auth.riotgames.com"
+                hostOnly: true
+                httpOnly: true
+                name: "sub"
+                path: "/"
+                persistent: true
+                secureOnly: true
+                value: "709f50bd-8894-5b11-8069-ab5b119ade3e"
+            -   domain: "auth.riotgames.com"
+                hostOnly: true
+                httpOnly: true
+                name: "csid"
+                path: "/"
+                persistent: true
+                secureOnly: true
+                value: "2ajFtUhUTCrdss5j5Eq0lA.hXTJSkidYw87NeEjBCazXA"
+            -   domain: "auth.riotgames.com"
+                hostOnly: true
+                httpOnly: true
+                name: "ssid"
+                path: "/"
+                persistent: true
+                secureOnly: true
+                value: "eyJhbGciOiJIUzI1NiJ9.eyJsb2dpblRva2VuIjoiYTc0Yjg1OGMtMzcxYy00MzM2LWI0MWYtMTg2ZDA5N2VhYmRiIiwic3ViIjoiNzA5ZjUwYmQtODg5NC01YjExLTgwNjktYWI1YjExOWFkZTNlIiwic2VyaWVzVG9rZW4iOiIzY2IyZjIxNy0zZmFlLTRkMWItOTg0NC0wMGE2NTAwNTZkMmQiLCJzc2lkIjoiMmFqRnRVaFVUQ3Jkc3M1ajVFcTBsQS5oWFRKU2tpZFl3ODdOZUVqQkNhelhBIiwiaWF0IjoxNzYzNjM0NTQyfQ.uP17BuLfkLQ66WB2FgM25WiPHVT4kiV-q_rRO1uYuic"
+rso-authenticator:
+    tdid:
+        domain: "riotgames.com"
+        expiryTime: 1795170539
+        hostOnly: false
+        httpOnly: true
+        name: "tdid"
+        path: "/"
+        persistent: true
+        secureOnly: true
+        value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjZkNTQyZDQ5LTBiODctNDUzOC04MmNhLTQ0MjE1N2I1ODIzYyIsIm5vbmNlIjoiaUpURVhlN0NPbDA9IiwiaWF0IjoxNzYzNjM0NTQwfQ.PMHz1g-q39QPOOQ4xe7gYAqu3vjuaK0Sm8g2qcE68y4"

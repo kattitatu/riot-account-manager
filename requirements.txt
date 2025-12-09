@@ -1,0 +1,14 @@
+# Required dependencies
+requests>=2.31.0
+Pillow>=10.0.0
+packaging>=23.0
+
+# Standard library (no installation needed):
+# - tkinter (usually included with Python)
+# - json
+# - os
+# - pathlib
+# - subprocess
+# - platform
+# - datetime
+# - threading

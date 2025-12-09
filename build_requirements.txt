@@ -1,0 +1,8 @@
+# Requirements for building the executable
+pyinstaller>=6.0.0
+
+# Application requirements
+requests>=2.31.0
+beautifulsoup4>=4.12.0
+Pillow>=10.0.0
+pyperclip>=1.8.2

@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Application specific
+accounts.json
+accounts_backup_*.json
+config.json
+*.log
+
+# Build artifacts
+*.spec
+build/
+dist/
+
+# Assets cache (downloaded icons)
+assets/champion/
+assets/rank/
+assets/profile/
+assets/spell/
+
+# Keep the icon
+!assets/rose.ico
+!assets/icon.ico
