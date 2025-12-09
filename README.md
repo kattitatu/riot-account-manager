@@ -2,16 +2,19 @@
 
 A comprehensive League of Legends account management tool with live game tracking, rank monitoring, and summoner spell tracking.
 
+![alt text](image.png)
+
+![alt text](image-1.png)
 ## Features
 
-### 🎮 Account Management
+### Account Management
 - Manage unlimited League of Legends accounts
 - Quick account switching with one click
 - Session management to avoid re-entering credentials
 - Custom display names and account organization
 - Password storage for quick copy (optional)
 
-### 📊 Rank & Stats
+### Rank & Stats (requires Riot API key)
 - Automatic rank fetching (tier, division, LP)
 - Visual rank badges
 - Win/Loss statistics with win rate
@@ -19,7 +22,7 @@ A comprehensive League of Legends account management tool with live game trackin
 - Profile icons
 - Champion mastery points
 
-### 🎯 Live Game Features
+### Live Game Features (requires Riot API key)
 - Real-time game detection
 - Complete team overview (all 10 players)
 - Lane-based organization
@@ -29,14 +32,14 @@ A comprehensive League of Legends account management tool with live game trackin
 - Clickable player names (op.gg links)
 - Streamer mode detection
 
-### ⏱ Summoner Spell Tracker
+### Summoner Spell Tracker (requires Riot API key)
 - Track enemy summoner spell cooldowns
 - Automatic Cosmic Insight rune detection
 - Click to start/stop timers
 - Visual countdown on spell icons
 - Supports: Flash, Heal, Barrier, Ignite, Exhaust
 
-### 🌐 Server Status
+### Server Status (requires Riot API key)
 - Real-time server status monitoring
 - Region selection
 - Incident tracking

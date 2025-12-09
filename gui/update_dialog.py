@@ -137,10 +137,16 @@ class UpdateDialog:
     
     def close_and_update(self):
         """Close the application to allow update"""
-        messagebox.showinfo("Update Ready", 
-                           "Update downloaded! The application will now close and restart with the new version.")
+        messagebox.showinfo(
+            "Update Downloaded", 
+            "Update downloaded successfully!\n\n"
+            "The app will now close and automatically restart with the new version.",
+            icon='info'
+        )
         self.dialog.destroy()
-        # Exit the entire application
+        # Close the main window properly
+        if self.parent_window:
+            self.parent_window.destroy()
         sys.exit(0)
     
     def reset_buttons(self):

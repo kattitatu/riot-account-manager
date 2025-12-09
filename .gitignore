@@ -41,6 +41,7 @@ accounts.json
 accounts_backup_*.json
 config.json
 *.log
+RELEASE_GUIDE.md
 
 # Build artifacts
 *.spec

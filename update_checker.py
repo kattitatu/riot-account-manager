@@ -87,17 +87,13 @@ class UpdateChecker:
             bool: True if successful, False otherwise
         """
         try:
-            # Get the actual exe location (not temp for --onefile)
+            # Get the actual exe location
+            # For --onefile, we need the ORIGINAL exe location, not the temp extraction
             if getattr(sys, 'frozen', False):
-                # For --onefile, sys.executable points to temp location
-                # We need to find the actual exe location
-                import __main__
-                if hasattr(__main__, '__file__'):
-                    current_exe = os.path.abspath(__main__.__file__)
-                else:
-                    # Fallback: use sys.argv[0]
-                    current_exe = os.path.abspath(sys.argv[0])
+                # Use sys.argv[0] which points to the actual exe location
+                current_exe = os.path.abspath(sys.argv[0])
             else:
+                # Running as script
                 current_exe = os.path.abspath(__file__)
             
             # Download to same directory as current exe
@@ -117,43 +113,64 @@ class UpdateChecker:
                         if progress_callback:
                             progress_callback(downloaded, total_size)
             
-            # Create update batch script with visible window for debugging
-            batch_script = os.path.join(exe_dir, "update.bat")
-            with open(batch_script, 'w') as f:
-                f.write('@echo off\n')
-                f.write('title Riot Account Manager Update\n')
-                f.write('echo ========================================\n')
-                f.write('echo Riot Account Manager Update\n')
-                f.write('echo ========================================\n')
-                f.write('echo.\n')
-                f.write('echo Waiting for application to close...\n')
-                f.write('timeout /t 5 /nobreak\n')
-                f.write('echo.\n')
-                f.write('echo Updating executable...\n')
-                f.write(f':retry\n')
-                f.write(f'del /F /Q "{current_exe}" 2>nul\n')
-                f.write(f'if exist "{current_exe}" (\n')
-                f.write(f'    echo Waiting for file to unlock...\n')
-                f.write(f'    timeout /t 2 /nobreak > nul\n')
-                f.write(f'    goto retry\n')
-                f.write(f')\n')
-                f.write(f'move /Y "{temp_exe}" "{current_exe}"\n')
-                f.write(f'if not exist "{current_exe}" (\n')
-                f.write(f'    echo ERROR: Update failed!\n')
-                f.write(f'    pause\n')
-                f.write(f'    exit\n')
-                f.write(f')\n')
-                f.write('echo.\n')
-                f.write('echo Update successful!\n')
-                f.write('echo Restarting application...\n')
-                f.write('timeout /t 2 /nobreak\n')
-                f.write(f'cd /d "{exe_dir}"\n')
-                f.write(f'start "" "{current_exe}"\n')
-                f.write(f'del "%~f0"\n')
+            # Create robust update script with process termination
+            current_exe_win = current_exe.replace('/', '\\')
+            temp_exe_win = temp_exe.replace('/', '\\')
+            exe_dir_win = exe_dir.replace('/', '\\')
+            exe_name = os.path.basename(current_exe)
             
-            # Run batch script
-            subprocess.Popen(['cmd', '/c', batch_script], 
-                           cwd=exe_dir)
+            update_script = os.path.join(exe_dir, "update.bat")
+            with open(update_script, 'w') as f:
+                f.write('@echo off\n')
+                f.write(f'cd /d "{exe_dir_win}"\n')
+                f.write('\n')
+                f.write('REM Wait for app to close\n')
+                f.write('timeout /t 2 /nobreak > nul\n')
+                f.write('\n')
+                f.write('REM Force kill any remaining processes\n')
+                f.write(f'taskkill /F /IM "{exe_name}" 2>nul\n')
+                f.write('timeout /t 1 /nobreak > nul\n')
+                f.write('\n')
+                f.write('REM Delete old exe with retry\n')
+                f.write(':retry_delete\n')
+                f.write(f'del /F /Q "{current_exe_win}" 2>nul\n')
+                f.write(f'if exist "{current_exe_win}" (\n')
+                f.write('    timeout /t 1 /nobreak > nul\n')
+                f.write('    goto retry_delete\n')
+                f.write(')\n')
+                f.write('\n')
+                f.write('REM Move new exe to replace old one\n')
+                f.write(f'move /Y "{temp_exe_win}" "{current_exe_win}"\n')
+                f.write('\n')
+                f.write('REM Verify the move succeeded\n')
+                f.write(f'if not exist "{current_exe_win}" (\n')
+                f.write('    echo Update failed!\n')
+                f.write('    pause\n')
+                f.write('    exit /b 1\n')
+                f.write(')\n')
+                f.write('\n')
+                f.write('REM Wait a moment then relaunch\n')
+                f.write('timeout /t 1 /nobreak > nul\n')
+                f.write(f'start "" "{current_exe_win}"\n')
+                f.write('\n')
+                f.write('REM Clean up this script\n')
+                f.write('del "%~f0"\n')
+            
+            # Run update script detached
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+            
+            subprocess.Popen(
+                ['cmd', '/c', update_script],
+                cwd=exe_dir,
+                creationflags=subprocess.CREATE_NO_WINDOW | subprocess.DETACHED_PROCESS,
+                startupinfo=startupinfo,
+                close_fds=True,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
             
             return True
             
