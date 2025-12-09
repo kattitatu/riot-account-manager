@@ -39,6 +39,7 @@ Thumbs.db
 # Application specific
 accounts.json
 accounts_backup_*.json
+account_backups/
 config.json
 *.log
 RELEASE_GUIDE.md
