@@ -44,6 +44,7 @@ config.json
 *.log
 RELEASE_GUIDE.md
 DISTRIBUTION_README.md
+*.zip
 
 # Build artifacts
 *.spec
