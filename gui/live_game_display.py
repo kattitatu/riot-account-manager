@@ -39,34 +39,60 @@ class LiveGameDisplay:
     
 
     def sort_by_lane(self, players):
-        """Sort players by lane position using summoner spells"""
-        # Smite spell ID for jungle detection
-        SMITE_ID = 11
+        """Sort players by lane using champion roles and summoner spells"""
+        from champion_data import get_champion_roles
         
-        # Separate jungle from others
-        jungle = []
-        others = []
+        SMITE_ID = 11
+        TELEPORT_ID = 12
+        HEAL_ID = 7
+        EXHAUST_ID = 3
+        
+        lane_assignments = {
+            'TOP': [],
+            'JUNGLE': [],
+            'MID': [],
+            'BOT': [],
+            'SUPPORT': []
+        }
         
         for player in players:
+            champion_id = player.get('championId')
             spell1 = player.get('spell1Id')
             spell2 = player.get('spell2Id')
+            spells = {spell1, spell2}
             
-            if spell1 == SMITE_ID or spell2 == SMITE_ID:
-                jungle.append(player)
+            # Jungle: Has Smite
+            if SMITE_ID in spells:
+                lane_assignments['JUNGLE'].append(player)
+                continue
+            
+            # Get champion's typical roles
+            roles = get_champion_roles(champion_id)
+            
+            # Support: Has Exhaust or typical support champion
+            if EXHAUST_ID in spells or 'SUPPORT' in roles:
+                lane_assignments['SUPPORT'].append(player)
+            # Bot/ADC: Has Heal
+            elif HEAL_ID in spells:
+                lane_assignments['BOT'].append(player)
+            # Top: Has Teleport or typical top champion
+            elif TELEPORT_ID in spells or 'TOP' in roles:
+                lane_assignments['TOP'].append(player)
+            # Mid: Everything else or typical mid champion
             else:
-                others.append(player)
+                lane_assignments['MID'].append(player)
         
-        # Return in order: first non-jungle (top), then jungle, then rest
-        # This assumes API gives them roughly in order
-        if len(others) >= 1 and len(jungle) >= 1:
-            # Top, Jungle, Mid, Bot, Support
-            result = [others[0]] if len(others) > 0 else []
-            result.extend(jungle)
-            result.extend(others[1:])
+        # Build final list in lane order
+        result = []
+        for lane in ['TOP', 'JUNGLE', 'MID', 'BOT', 'SUPPORT']:
+            result.extend(lane_assignments[lane])
+        
+        # If we have exactly 5 players and all lanes filled, return sorted
+        if len(result) == 5:
             return result
-        else:
-            # Fallback: just return original order
-            return players
+        
+        # Fallback: return original order if sorting failed
+        return players if len(result) != 5 else result
     
     def create_teams_display(self, parent):
         """Create teams display (Blue vs Red) with bans stacked on left"""

@@ -54,3 +54,53 @@ def format_mastery_points(points):
         return f"{points / 1000:.0f}k"
     else:
         return str(points)
+
+
+# Champion typical roles (simplified for lane detection)
+CHAMPION_ROLES = {
+    # Top laners
+    1: ['MID'], 3: ['TOP', 'SUPPORT'], 4: ['MID'], 5: ['JUNGLE'], 6: ['TOP'],
+    7: ['MID'], 8: ['TOP', 'MID'], 9: ['JUNGLE', 'SUPPORT'], 10: ['TOP'],
+    11: ['JUNGLE'], 12: ['SUPPORT'], 13: ['MID'], 14: ['TOP'], 15: ['BOT'],
+    16: ['SUPPORT'], 17: ['TOP'], 18: ['BOT'], 19: ['JUNGLE'], 20: ['JUNGLE'],
+    21: ['BOT'], 22: ['BOT', 'SUPPORT'], 23: ['TOP'], 24: ['TOP', 'JUNGLE'],
+    25: ['SUPPORT', 'MID'], 26: ['SUPPORT'], 27: ['TOP'], 28: ['JUNGLE'],
+    29: ['BOT', 'JUNGLE'], 30: ['JUNGLE'], 31: ['TOP', 'MID'], 32: ['JUNGLE', 'SUPPORT'],
+    33: ['JUNGLE'], 34: ['MID'], 35: ['JUNGLE', 'SUPPORT'], 36: ['TOP', 'JUNGLE'],
+    37: ['SUPPORT'], 38: ['MID'], 39: ['TOP', 'MID'], 40: ['SUPPORT'],
+    41: ['TOP'], 42: ['MID', 'BOT'], 43: ['SUPPORT'], 44: ['SUPPORT'],
+    45: ['MID'], 48: ['TOP', 'JUNGLE'], 50: ['TOP', 'SUPPORT'], 51: ['BOT'],
+    53: ['SUPPORT'], 54: ['TOP', 'SUPPORT'], 55: ['MID'], 56: ['JUNGLE'],
+    57: ['TOP', 'SUPPORT'], 58: ['TOP'], 59: ['JUNGLE'], 60: ['JUNGLE', 'SUPPORT'],
+    61: ['MID'], 62: ['TOP', 'JUNGLE'], 63: ['SUPPORT', 'MID'], 64: ['JUNGLE'],
+    67: ['BOT'], 68: ['TOP'], 69: ['MID'], 72: ['JUNGLE'], 74: ['TOP', 'SUPPORT'],
+    75: ['TOP'], 76: ['JUNGLE', 'MID'], 77: ['JUNGLE'], 78: ['TOP', 'SUPPORT'],
+    79: ['TOP', 'JUNGLE'], 80: ['TOP', 'SUPPORT'], 81: ['BOT', 'MID'],
+    82: ['TOP'], 83: ['TOP'], 84: ['TOP', 'MID'], 85: ['TOP'], 86: ['TOP'],
+    89: ['SUPPORT'], 90: ['MID'], 91: ['MID'], 92: ['TOP'], 96: ['BOT'],
+    98: ['TOP', 'SUPPORT'], 99: ['MID', 'SUPPORT'], 101: ['MID'], 102: ['JUNGLE'],
+    103: ['MID'], 104: ['JUNGLE'], 105: ['MID'], 106: ['TOP', 'JUNGLE'],
+    107: ['TOP', 'JUNGLE'], 110: ['BOT', 'MID'], 111: ['SUPPORT'], 112: ['MID'],
+    113: ['JUNGLE'], 114: ['TOP'], 115: ['MID'], 117: ['SUPPORT'], 119: ['BOT'],
+    120: ['JUNGLE'], 121: ['JUNGLE'], 122: ['TOP'], 126: ['TOP', 'MID'],
+    127: ['MID'], 131: ['JUNGLE', 'MID'], 133: ['TOP'], 134: ['MID'],
+    136: ['MID'], 141: ['JUNGLE'], 142: ['MID'], 143: ['SUPPORT'], 145: ['BOT'],
+    147: ['SUPPORT', 'MID'], 150: ['TOP'], 154: ['JUNGLE'], 157: ['MID', 'TOP'],
+    161: ['SUPPORT', 'MID'], 163: ['MID', 'JUNGLE'], 164: ['TOP'], 166: ['MID'],
+    200: ['JUNGLE'], 201: ['SUPPORT'], 202: ['BOT'], 203: ['JUNGLE'], 221: ['BOT'],
+    222: ['BOT'], 223: ['TOP', 'SUPPORT'], 233: ['JUNGLE'], 234: ['JUNGLE'],
+    235: ['SUPPORT', 'BOT'], 236: ['BOT'], 238: ['MID'], 240: ['TOP'],
+    245: ['JUNGLE', 'MID'], 246: ['JUNGLE', 'MID'], 254: ['JUNGLE'], 266: ['TOP'],
+    267: ['SUPPORT'], 268: ['MID'], 350: ['SUPPORT'], 360: ['BOT'], 412: ['SUPPORT'],
+    420: ['TOP'], 421: ['JUNGLE'], 427: ['JUNGLE', 'SUPPORT'], 429: ['BOT'],
+    432: ['SUPPORT'], 497: ['SUPPORT'], 498: ['BOT'], 516: ['TOP'], 517: ['MID'],
+    518: ['MID', 'SUPPORT'], 523: ['BOT'], 526: ['SUPPORT'], 555: ['SUPPORT'],
+    711: ['MID'], 777: ['MID', 'TOP'], 799: ['TOP'], 800: ['SUPPORT'],
+    804: ['JUNGLE'], 875: ['TOP'], 876: ['JUNGLE'], 887: ['TOP'], 888: ['SUPPORT'],
+    893: ['MID'], 895: ['BOT'], 897: ['TOP'], 901: ['BOT', 'MID'],
+    902: ['SUPPORT'], 904: ['JUNGLE'], 910: ['MID'], 950: ['MID', 'JUNGLE']
+}
+
+def get_champion_roles(champion_id):
+    """Get typical roles for a champion"""
+    return CHAMPION_ROLES.get(champion_id, [])

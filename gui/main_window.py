@@ -65,6 +65,11 @@ class MainWindow:
                                      font=("Arial", 9, "bold"), bg="#2c2c2c", fg="#888888")
         self.status_label.pack(side=tk.LEFT, padx=15, pady=10)
         
+        # Version number
+        version_label = tk.Label(top_frame, text=f"v{__version__}", 
+                                font=("Arial", 8), bg="#2c2c2c", fg="#666666")
+        version_label.pack(side=tk.LEFT, padx=(0, 15), pady=10)
+        
         # Right side buttons
         settings_btn = tk.Button(top_frame, text="⚙️ Settings", 
                            command=self.open_settings,
