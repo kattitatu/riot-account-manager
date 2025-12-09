@@ -2,6 +2,11 @@
 
 A comprehensive League of Legends account management tool with live game tracking, rank monitoring, and summoner spell tracking.
 
+To use all the features, I recommend you request a permanent personal API key from: 
+https://developer.riotgames.com/app-type
+These usually get automatically accepted.
+Account switcher works without API key if you don't care about statistics
+
 ![alt text](image.png)
 
 ![alt text](image-1.png)
@@ -45,12 +50,16 @@ A comprehensive League of Legends account management tool with live game trackin
 - Incident tracking
 - Auto-updates every 10 minutes
 
-### 🔄 Auto-Update
+### Auto-Update
 - Automatic new version detection
 - One-click update download
 - Release notes display
 
 ## Installation
+
+- Download a ready executable from releases 
+OR 
+- Follow instructions below to build it yourself
 
 ### Prerequisites
 - Python 3.8 or higher
@@ -110,6 +119,8 @@ The executable will be created in the `dist` folder.
 2. Enter your username (session ID)
 3. Optionally add display name, Riot ID, and password
 4. Click "Add Account"
+5. Login to that account manually and click "Save Current Session" to store that session locally.
+    - you might still need manual login if session expires (out of our control)
 
 ## Usage
 
