@@ -173,8 +173,15 @@ class AccountCard(tk.Frame):
                     else:
                         self.profile_icon_reference = photo
                     
-                    icon_label = tk.Label(profile_frame, image=photo, bg="#2d2d2d")
-                    icon_label.pack(side=tk.LEFT, padx=(0, 8))
+                    # Create frame with border for depth effect
+                    icon_border = tk.Frame(profile_frame, bg="#0078d4", 
+                                          highlightbackground="#0078d4", 
+                                          highlightthickness=1)
+                    icon_border.pack(side=tk.LEFT, padx=(0, 8))
+                    
+                    icon_label = tk.Label(icon_border, image=photo, bg="#2d2d2d", 
+                                         borderwidth=0)
+                    icon_label.pack(padx=1, pady=1)
             except Exception as e:
                 print(f"Error loading profile icon: {e}")
         

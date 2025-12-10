@@ -6,6 +6,7 @@ from gui.edit_account_dialog import EditAccountDialog
 from gui.settings_dialog import SettingsDialog
 from gui.ranked_stats_dialog import RankedStatsDialog
 from gui.live_game_display import LiveGameDisplay
+from gui.match_history_display import MatchHistoryDisplay
 from gui.update_dialog import UpdateDialog
 from riot_switcher import RiotSwitcher
 from rank_fetcher import RankFetcher
@@ -13,6 +14,7 @@ from rank_icons import RankIcons
 from profile_icon_fetcher import ProfileIconFetcher
 from status_fetcher import StatusFetcher
 from live_game_fetcher import LiveGameFetcher
+from match_history_fetcher import MatchHistoryFetcher
 from update_checker import UpdateChecker
 from version import __version__
 import threading
@@ -29,10 +31,12 @@ class MainWindow:
         self.profile_icon_fetcher = ProfileIconFetcher(api_key=api_key)
         self.status_fetcher = StatusFetcher(api_key=api_key)
         self.live_game_fetcher = LiveGameFetcher(api_key=api_key)
+        self.match_history_fetcher = MatchHistoryFetcher(api_key=api_key)
         self.rank_icons = RankIcons()
         self.account_cards = []
         self.status_label = None
         self.status_update_job = None
+        self.sort_method = "original"  # Track current sort method
         
         # Update checker
         self.update_checker = UpdateChecker("kattitatu/riot-account-manager")
@@ -91,6 +95,22 @@ class MainWindow:
                  foreground=[('selected', 'white')],
                  focuscolor=[('selected', 'none')])
         
+        # Combobox styling
+        style.configure('TCombobox', 
+                       fieldbackground='#1e1e1e', 
+                       background='#2d2d2d', 
+                       foreground='white',
+                       arrowcolor='white',
+                       bordercolor='#4a4a4a',
+                       lightcolor='#2d2d2d',
+                       darkcolor='#2d2d2d',
+                       selectbackground='#0078d4',
+                       selectforeground='white')
+        style.map('TCombobox', 
+                 fieldbackground=[('readonly', '#1e1e1e')],
+                 selectbackground=[('readonly', '#1e1e1e')],
+                 selectforeground=[('readonly', 'white')])
+        
         self.notebook = ttk.Notebook(tab_container)
         self.notebook.pack(fill=tk.BOTH, expand=True)
         
@@ -100,6 +120,13 @@ class MainWindow:
         
         # Setup accounts tab content
         self.setup_accounts_tab()
+        
+        # Match History Tab
+        self.match_history_tab = tk.Frame(self.notebook, bg="#1e1e1e")
+        self.notebook.add(self.match_history_tab, text="Match History")
+        
+        # Setup match history tab content
+        self.setup_match_history_tab()
         
         # Live Game Tab
         self.live_game_tab = tk.Frame(self.notebook, bg="#1e1e1e")
@@ -115,6 +142,22 @@ class MainWindow:
         btn_frame.pack(fill=tk.X, side=tk.TOP)
         btn_frame.pack_propagate(False)
         
+        # Sort control on the left
+        sort_label = tk.Label(btn_frame, text="Sort by:", 
+                             font=("Arial", 9), bg="#2c2c2c", fg="white")
+        sort_label.pack(side=tk.LEFT, padx=(15, 8), pady=10)
+        
+        self.sort_var = tk.StringVar(value="Original Order")
+        self.sort_combo = ttk.Combobox(btn_frame, 
+                                       textvariable=self.sort_var,
+                                       state="readonly",
+                                       font=("Arial", 9),
+                                       width=18,
+                                       values=["Original Order", "Level (High to Low)", "Rank (High to Low)"])
+        self.sort_combo.pack(side=tk.LEFT, padx=5, pady=10)
+        self.sort_combo.bind("<<ComboboxSelected>>", self.on_sort_changed)
+        
+        # Buttons on the right
         add_btn = tk.Button(btn_frame, text="+ Add Account", 
                            command=self.add_account,
                            bg="#0078d4", fg="white", font=("Arial", 9),
@@ -153,6 +196,142 @@ class MainWindow:
             self.accounts_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
         
         self.accounts_canvas.bind_all("<MouseWheel>", on_mousewheel)
+    
+    def setup_match_history_tab(self):
+        """Setup the match history tab with account selector and refresh"""
+        # Top control bar
+        control_frame = tk.Frame(self.match_history_tab, bg="#2c2c2c", height=45)
+        control_frame.pack(fill=tk.X, side=tk.TOP)
+        control_frame.pack_propagate(False)
+        
+        # Account selector label
+        selector_label = tk.Label(control_frame, text="Account:", 
+                                 font=("Arial", 9, "bold"), bg="#2c2c2c", fg="white")
+        selector_label.pack(side=tk.LEFT, padx=(15, 8), pady=10)
+        
+        # Account dropdown
+        self.match_history_account_var = tk.StringVar()
+        self.match_history_account_combo = ttk.Combobox(control_frame, 
+                                                        textvariable=self.match_history_account_var,
+                                                        state="readonly",
+                                                        font=("Arial", 9),
+                                                        width=25)
+        self.match_history_account_combo.pack(side=tk.LEFT, padx=5, pady=10)
+        
+        # Populate dropdown with accounts
+        self.update_match_history_accounts()
+        
+        # Refresh button
+        refresh_btn = tk.Button(control_frame, text="🔄 Refresh", 
+                               command=self.refresh_match_history,
+                               bg="#0078d4", fg="white", font=("Arial", 9),
+                               padx=12, pady=4, relief=tk.FLAT, cursor="hand2")
+        refresh_btn.pack(side=tk.LEFT, padx=8, pady=10)
+        
+        # Content area
+        self.match_history_content = tk.Frame(self.match_history_tab, bg="#1e1e1e")
+        self.match_history_content.pack(fill=tk.BOTH, expand=True)
+        
+        # Initial placeholder
+        self.show_match_history_placeholder()
+    
+    def update_match_history_accounts(self):
+        """Update the account dropdown in match history tab"""
+        accounts = self.account_manager.get_all_accounts()
+        
+        if not accounts:
+            self.match_history_account_combo['values'] = ["No accounts available"]
+            self.match_history_account_combo.current(0)
+            return
+        
+        # Create list of account display names
+        account_names = [acc.get('display_name', acc.get('username', 'Unknown')) for acc in accounts]
+        self.match_history_account_combo['values'] = account_names
+        
+        # Select first account by default
+        if account_names:
+            self.match_history_account_combo.current(0)
+    
+    def show_match_history_placeholder(self):
+        """Show placeholder message in match history content area"""
+        # Clear existing content
+        for widget in self.match_history_content.winfo_children():
+            widget.destroy()
+        
+        placeholder = tk.Label(self.match_history_content, 
+                              text="Select an account and click Refresh\nto view match history", 
+                              font=("Arial", 14), bg="#1e1e1e", fg="#888888")
+        placeholder.pack(expand=True, pady=100)
+    
+    def refresh_match_history(self):
+        """Refresh match history for selected account"""
+        selected_name = self.match_history_account_var.get()
+        
+        if not selected_name or selected_name == "No accounts available":
+            messagebox.showwarning("No Account", "Please select an account first.")
+            return
+        
+        # Find the selected account
+        accounts = self.account_manager.get_all_accounts()
+        selected_account = None
+        
+        for acc in accounts:
+            if acc.get('display_name', acc.get('username')) == selected_name:
+                selected_account = acc
+                break
+        
+        if not selected_account:
+            messagebox.showerror("Error", "Selected account not found.")
+            return
+        
+        # Check if account has Riot ID
+        riot_id = selected_account.get('riot_id', '')
+        if not riot_id:
+            messagebox.showwarning("No Riot ID", 
+                                  f"Account '{selected_name}' doesn't have a Riot ID set.\nPlease edit the account and add a Riot ID (e.g. Name#TAG).")
+            return
+        
+        # Show loading message
+        for widget in self.match_history_content.winfo_children():
+            widget.destroy()
+        
+        loading_label = tk.Label(self.match_history_content, 
+                                text=f"Fetching match history for {selected_name}...", 
+                                font=("Arial", 12), bg="#1e1e1e", fg="white")
+        loading_label.pack(expand=True, pady=100)
+        
+        # Fetch match history in background thread
+        def fetch_in_thread():
+            region = get_region()
+            matches, error = self.match_history_fetcher.fetch_match_history(riot_id, region, count=10)
+            
+            # Update UI in main thread
+            self.root.after(0, lambda: self._handle_match_history_result(selected_name, matches, error))
+        
+        thread = threading.Thread(target=fetch_in_thread, daemon=True)
+        thread.start()
+    
+    def _handle_match_history_result(self, account_name, matches, error):
+        """Handle the match history fetch result"""
+        # Clear loading message
+        for widget in self.match_history_content.winfo_children():
+            widget.destroy()
+        
+        if error:
+            # Show error message
+            error_label = tk.Label(self.match_history_content, 
+                                  text=f"Error: {error}", 
+                                  font=("Arial", 12), bg="#1e1e1e", fg="#dc3545")
+            error_label.pack(expand=True, pady=100)
+        elif not matches:
+            # No matches found
+            no_matches_label = tk.Label(self.match_history_content, 
+                                       text=f"No matches found for {account_name}", 
+                                       font=("Arial", 14), bg="#1e1e1e", fg="#888888")
+            no_matches_label.pack(expand=True, pady=100)
+        else:
+            # Display match history
+            MatchHistoryDisplay(self.match_history_content, matches)
     
     def setup_live_game_tab(self):
         """Setup the live game tab with account selector and refresh"""
@@ -275,6 +454,74 @@ class MainWindow:
         thread = threading.Thread(target=fetch_in_thread, daemon=True)
         thread.start()
     
+    def on_sort_changed(self, event=None):
+        """Handle sort method change"""
+        sort_text = self.sort_var.get()
+        
+        if sort_text == "Original Order":
+            self.sort_method = "original"
+        elif sort_text == "Level (High to Low)":
+            self.sort_method = "level"
+        elif sort_text == "Rank (High to Low)":
+            self.sort_method = "rank"
+        
+        self.refresh_accounts()
+    
+    def sort_accounts(self, accounts):
+        """Sort accounts based on current sort method"""
+        if self.sort_method == "original":
+            # Sort by ID (original order)
+            return sorted(accounts, key=lambda x: x.get('id', 0))
+        
+        elif self.sort_method == "level":
+            # Sort by summoner level (high to low), None values go to end
+            return sorted(accounts, key=lambda x: (x.get('summoner_level') is None, -(x.get('summoner_level') or 0)))
+        
+        elif self.sort_method == "rank":
+            # Sort by rank (high to low)
+            rank_order = {
+                'CHALLENGER': 9,
+                'GRANDMASTER': 8,
+                'MASTER': 7,
+                'DIAMOND': 6,
+                'EMERALD': 5,
+                'PLATINUM': 4,
+                'GOLD': 3,
+                'SILVER': 2,
+                'BRONZE': 1,
+                'IRON': 0,
+                'Unranked': -1
+            }
+            
+            division_order = {'I': 4, 'II': 3, 'III': 2, 'IV': 1}
+            
+            def rank_key(account):
+                rank_str = account.get('rank', 'Unranked')
+                
+                # Handle "Unranked" or None
+                if not rank_str or rank_str == 'Unranked':
+                    return (-1, 0, 0)
+                
+                # Parse rank string (e.g., "GOLD II" or "MASTER")
+                parts = rank_str.split()
+                tier = parts[0] if parts else 'Unranked'
+                division = parts[1] if len(parts) > 1 else 'I'
+                
+                # Get LP from ranked_stats if available
+                lp = 0
+                ranked_stats = account.get('ranked_stats')
+                if ranked_stats and isinstance(ranked_stats, dict):
+                    lp = ranked_stats.get('lp', 0)
+                
+                tier_value = rank_order.get(tier, -1)
+                division_value = division_order.get(division, 0)
+                
+                return (tier_value, division_value, lp)
+            
+            return sorted(accounts, key=rank_key, reverse=True)
+        
+        return accounts
+    
     def refresh_accounts(self):
         """Refresh the account grid"""
         # Clear existing cards
@@ -287,6 +534,9 @@ class MainWindow:
         
         if not accounts:
             return
+        
+        # Sort accounts based on current method
+        accounts = self.sort_accounts(accounts)
         
         # Determine optimal number of columns based on account count
         num_accounts = len(accounts)
@@ -324,9 +574,11 @@ class MainWindow:
         for i in range(columns):
             self.scrollable_frame.grid_columnconfigure(i, weight=1, uniform="col")
         
-        # Update live game account dropdown
+        # Update dropdowns in other tabs
         if hasattr(self, 'live_game_account_combo'):
             self.update_live_game_accounts()
+        if hasattr(self, 'match_history_account_combo'):
+            self.update_match_history_accounts()
     
     def open_settings(self):
         """Open settings dialog"""
@@ -337,6 +589,7 @@ class MainWindow:
         self.rank_fetcher = RankFetcher(api_key=api_key)
         self.status_fetcher = StatusFetcher(api_key=api_key)
         self.live_game_fetcher = LiveGameFetcher(api_key=api_key)
+        self.match_history_fetcher = MatchHistoryFetcher(api_key=api_key)
         # Refresh status with new settings
         self.update_status()
     
