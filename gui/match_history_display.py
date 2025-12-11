@@ -8,6 +8,7 @@ import os
 import requests
 import webbrowser
 from champion_data import get_champion_roles
+from config import get_theme_colors
 
 class MatchHistoryDisplay:
     def __init__(self, parent, matches):
@@ -17,6 +18,9 @@ class MatchHistoryDisplay:
         self.small_champion_icons = {}  # Cache for small champion icons
         self.item_icons = {}  # Cache for item icons
         self.spell_icons = {}  # Cache for summoner spell icons
+        
+        # Get theme colors
+        self.colors = get_theme_colors()
         
         # Clear parent
         for widget in parent.winfo_children():
@@ -28,11 +32,26 @@ class MatchHistoryDisplay:
         # Display matches
         self.display_matches()
     
+    def refresh_theme(self):
+        """Refresh the match history display with new theme colors"""
+        # Update theme colors
+        self.colors = get_theme_colors()
+        
+        # Update canvas and frame colors
+        self.canvas.configure(bg=self.colors['bg_primary'])
+        self.scrollable_frame.configure(bg=self.colors['bg_primary'])
+        
+        # Clear and recreate the display with new colors
+        for widget in self.scrollable_frame.winfo_children():
+            widget.destroy()
+        
+        self.display_matches()
+    
     def setup_scrollable_frame(self):
         """Setup scrollable frame for match list"""
         # Canvas for scrolling (no scrollbar)
-        self.canvas = tk.Canvas(self.parent, bg="#1e1e1e", highlightthickness=0)
-        self.scrollable_frame = tk.Frame(self.canvas, bg="#1e1e1e")
+        self.canvas = tk.Canvas(self.parent, bg=self.colors['bg_primary'], highlightthickness=0)
+        self.scrollable_frame = tk.Frame(self.canvas, bg=self.colors['bg_primary'])
         
         self.scrollable_frame.bind(
             "<Configure>",
@@ -62,7 +81,7 @@ class MatchHistoryDisplay:
         if not self.matches:
             no_matches = tk.Label(self.scrollable_frame, 
                                  text="No matches found", 
-                                 font=("Arial", 14), bg="#1e1e1e", fg="#888888")
+                                 font=("Arial", 14), bg=self.colors['bg_primary'], fg=self.colors['text_muted'])
             no_matches.pack(pady=50)
             return
         
@@ -73,10 +92,10 @@ class MatchHistoryDisplay:
         """Create a card for a single match"""
         # Determine win/loss colors
         win = match.get('win', False)
-        bg_color = "#1a2a3a" if win else "#3a1a1a"  # Dark blue for win, dark red for loss
-        border_color = "#4a90e2" if win else "#dc3545"  # Blue border for win, red for loss
+        bg_color = self.colors['win_bg'] if win else self.colors['loss_bg']
+        border_color = self.colors['win_border'] if win else self.colors['loss_border']
         result_text = "Victory" if win else "Defeat"
-        result_color = "#5b9bd5" if win else "#ff4444"  # Blue text for win, red for loss
+        result_color = self.colors['win_border'] if win else self.colors['loss_border']
         
         # Main card frame
         card = tk.Frame(self.scrollable_frame, bg=bg_color, 

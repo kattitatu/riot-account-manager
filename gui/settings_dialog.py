@@ -1,15 +1,20 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
-from config import get_api_key, set_api_key, get_region, set_region
+from config import get_api_key, set_api_key, get_region, set_region, get_theme, set_theme, get_theme_colors
 from status_fetcher import StatusFetcher
 
 class SettingsDialog:
-    def __init__(self, parent):
+    def __init__(self, parent, theme_callback=None):
+        self.parent = parent
+        self.theme_callback = theme_callback
         self.dialog = tk.Toplevel(parent)
         self.dialog.title("Settings")
-        self.dialog.geometry("500x350")
+        self.dialog.geometry("500x480")
         self.dialog.resizable(False, False)
-        self.dialog.configure(bg="#2d2d2d")
+        
+        # Get theme colors
+        self.colors = get_theme_colors()
+        self.dialog.configure(bg=self.colors['bg_secondary'])
         
         # Make dialog modal
         self.dialog.transient(parent)
@@ -84,6 +89,47 @@ class SettingsDialog:
         if not self.region_var.get() and regions:
             self.region_combo.current(0)
         
+        # Theme section
+        theme_frame = tk.Frame(main_frame, bg="#2d2d2d")
+        theme_frame.pack(fill=tk.X, pady=(0, 20))
+        
+        theme_label = tk.Label(theme_frame, text="Theme:", 
+                              font=("Arial", 10, "bold"), bg="#2d2d2d", fg="white")
+        theme_label.pack(anchor="w", pady=(0, 5))
+        
+        theme_info = tk.Label(theme_frame, 
+                             text="Choose your preferred color theme (requires restart)",
+                             font=("Arial", 8), bg="#2d2d2d", fg="#888888")
+        theme_info.pack(anchor="w", pady=(0, 8))
+        
+        # Theme dropdown
+        self.theme_var = tk.StringVar()
+        current_theme = get_theme()
+        
+        themes = [
+            ("Dark Grey (Default)", "dark_grey"),
+            ("Pure Black", "pure_black"),
+            ("Bright/Light", "bright"),
+            ("Blue Dark", "blue_dark"),
+            ("Purple Dark", "purple_dark")
+        ]
+        
+        theme_names = [name for name, code in themes]
+        
+        self.theme_combo = ttk.Combobox(theme_frame, textvariable=self.theme_var,
+                                       values=theme_names, state="readonly",
+                                       font=("Arial", 10))
+        self.theme_combo.pack(fill=tk.X, ipady=3)
+        
+        # Set current theme
+        for idx, (name, code) in enumerate(themes):
+            if code == current_theme:
+                self.theme_combo.current(idx)
+                break
+        
+        if not self.theme_var.get():
+            self.theme_combo.current(0)  # Default to first theme
+        
         # Buttons
         btn_frame = tk.Frame(main_frame, bg="#2d2d2d")
         btn_frame.pack(pady=(20, 0), fill=tk.X)
@@ -104,6 +150,7 @@ class SettingsDialog:
         """Save settings"""
         api_key = self.api_entry.get().strip()
         region_selection = self.region_var.get()
+        theme_selection = self.theme_var.get()
         
         # Extract region code from selection (format: "EUW (EUW1)")
         if region_selection and '(' in region_selection:
@@ -111,14 +158,38 @@ class SettingsDialog:
         else:
             region_code = 'euw1'
         
+        # Extract theme code from selection
+        themes = [
+            ("Dark Grey (Default)", "dark_grey"),
+            ("Pure Black", "pure_black"),
+            ("Bright/Light", "bright"),
+            ("Blue Dark", "blue_dark"),
+            ("Purple Dark", "purple_dark")
+        ]
+        
+        theme_code = "dark_grey"  # default
+        for name, code in themes:
+            if name == theme_selection:
+                theme_code = code
+                break
+        
         success = True
         if api_key:
             success = success and set_api_key(api_key)
         
         success = success and set_region(region_code)
         
+        # Check if theme changed before saving
+        current_theme = get_theme()
+        theme_changed = theme_code != current_theme
+        
+        success = success and set_theme(theme_code)
+        
         if success:
-            # Settings saved silently, no popup
+            # Apply theme immediately if changed
+            if theme_changed and self.theme_callback:
+                self.theme_callback()
+            
             self.dialog.destroy()
         else:
             messagebox.showerror("Error", "Failed to save settings")

@@ -19,7 +19,7 @@ from update_checker import UpdateChecker
 from version import __version__
 import threading
 import os
-from config import get_api_key, get_region
+from config import get_api_key, get_region, get_theme_colors
 
 class MainWindow:
     def __init__(self, root, account_manager):
@@ -38,6 +38,9 @@ class MainWindow:
         self.status_update_job = None
         self.sort_method = "original"  # Track current sort method
         
+        # Theme colors
+        self.colors = get_theme_colors()
+        
         # Update checker
         self.update_checker = UpdateChecker("kattitatu/riot-account-manager")
         
@@ -47,6 +50,109 @@ class MainWindow:
         self.update_status()  # Initial status fetch
         self.schedule_status_update()  # Schedule periodic updates
         self.check_for_updates()  # Check for updates on startup
+    
+    def refresh_theme(self):
+        """Refresh the entire UI with new theme colors"""
+        # Update theme colors
+        self.colors = get_theme_colors()
+        
+        # Refresh all UI elements
+        self.refresh_ui_colors()
+        
+        # Refresh account cards
+        self.refresh_accounts()
+        
+        # Refresh match history display if it exists
+        for widget in self.match_history_content.winfo_children():
+            if hasattr(widget, 'refresh_theme'):
+                widget.refresh_theme()
+                break
+    
+    def refresh_ui_colors(self):
+        """Update all UI element colors with current theme"""
+        # Update root window
+        self.root.configure(bg=self.colors['bg_primary'])
+        
+        # Update tab container
+        for widget in self.root.winfo_children():
+            if isinstance(widget, tk.Frame):
+                widget.configure(bg=self.colors['bg_primary'])
+        
+        # Update notebook styling
+        style = ttk.Style()
+        style.configure('TNotebook', background=self.colors['bg_primary'], borderwidth=0)
+        style.configure('TNotebook.Tab', background=self.colors['bg_secondary'], foreground=self.colors['text_primary'])
+        style.map('TNotebook.Tab', background=[('selected', self.colors['accent_blue'])], 
+                 foreground=[('selected', self.colors['text_primary'])])
+        
+        # Update combobox styling
+        style.configure('TCombobox', 
+                       fieldbackground=self.colors['bg_primary'], 
+                       background=self.colors['bg_secondary'], 
+                       foreground=self.colors['text_primary'],
+                       arrowcolor=self.colors['text_primary'],
+                       bordercolor=self.colors['border'],
+                       selectbackground=self.colors['accent_blue'])
+        
+        # Update tab backgrounds
+        self.accounts_tab.configure(bg=self.colors['bg_primary'])
+        self.match_history_tab.configure(bg=self.colors['bg_primary'])
+        self.live_game_tab.configure(bg=self.colors['bg_primary'])
+        
+        # Update content areas
+        self.match_history_content.configure(bg=self.colors['bg_primary'])
+        self.live_game_content.configure(bg=self.colors['bg_primary'])
+        
+        # Update status label
+        self.status_label.configure(bg=self.colors['bg_secondary'], fg=self.colors['text_muted'])
+        
+        # Recursively update all child widgets
+        self._update_widget_colors(self.root)
+    
+    def _update_widget_colors(self, widget):
+        """Recursively update widget colors based on their type"""
+        try:
+            widget_class = widget.winfo_class()
+            
+            if widget_class == 'Frame':
+                # Check if it's a button frame or content frame
+                if hasattr(widget, 'master') and widget.master:
+                    parent_class = widget.master.winfo_class()
+                    if 'btn' in str(widget).lower() or 'button' in str(widget).lower():
+                        widget.configure(bg=self.colors['bg_secondary'])
+                    else:
+                        widget.configure(bg=self.colors['bg_primary'])
+                        
+            elif widget_class == 'Label':
+                # Update label colors based on context
+                current_bg = widget.cget('bg')
+                if current_bg in ['#2c2c2c', '#2d2d2d']:
+                    widget.configure(bg=self.colors['bg_secondary'], fg=self.colors['text_primary'])
+                elif current_bg in ['#1e1e1e']:
+                    widget.configure(bg=self.colors['bg_primary'], fg=self.colors['text_primary'])
+                    
+            elif widget_class == 'Button':
+                # Update button colors based on current color
+                current_bg = widget.cget('bg')
+                if current_bg == '#0078d4':
+                    widget.configure(bg=self.colors['accent_blue'], fg=self.colors['text_primary'])
+                elif current_bg == '#28a745':
+                    widget.configure(bg=self.colors['accent_green'], fg=self.colors['text_primary'])
+                elif current_bg in ['#17a2b8', '#6c757d', '#4a4a4a']:
+                    widget.configure(bg=self.colors['bg_tertiary'], fg=self.colors['text_primary'])
+                elif current_bg == '#5b21b6':
+                    widget.configure(bg=self.colors['accent_blue'], fg=self.colors['text_primary'])
+                    
+            elif widget_class == 'Canvas':
+                widget.configure(bg=self.colors['bg_primary'])
+            
+            # Recursively update children
+            for child in widget.winfo_children():
+                self._update_widget_colors(child)
+                
+        except tk.TclError:
+            # Widget might be destroyed, skip it
+            pass
     
     def setup_window_icon(self):
         """Setup the window icon"""
@@ -60,76 +166,76 @@ class MainWindow:
     def setup_ui(self):
         """Setup the main UI"""
         # Top bar with buttons - reduced height
-        top_frame = tk.Frame(self.root, bg="#2c2c2c", height=45)
+        top_frame = tk.Frame(self.root, bg=self.colors['bg_secondary'], height=45)
         top_frame.pack(fill=tk.X, side=tk.TOP)
         top_frame.pack_propagate(False)
         
         # Status indicator on the left
         self.status_label = tk.Label(top_frame, text="● Loading...", 
-                                     font=("Arial", 9, "bold"), bg="#2c2c2c", fg="#888888")
+                                     font=("Arial", 9, "bold"), bg=self.colors['bg_secondary'], fg=self.colors['text_muted'])
         self.status_label.pack(side=tk.LEFT, padx=15, pady=10)
         
         # Version number
         version_label = tk.Label(top_frame, text=f"v{__version__}", 
-                                font=("Arial", 8), bg="#2c2c2c", fg="#666666")
+                                font=("Arial", 8), bg=self.colors['bg_secondary'], fg=self.colors['text_muted'])
         version_label.pack(side=tk.LEFT, padx=(0, 15), pady=10)
         
         # Right side buttons
         settings_btn = tk.Button(top_frame, text="⚙️ Settings", 
                            command=self.open_settings,
-                           bg="#6c757d", fg="white", font=("Arial", 9),
+                           bg=self.colors['bg_tertiary'], fg=self.colors['text_primary'], font=("Arial", 9),
                            padx=12, pady=4, relief=tk.FLAT, cursor="hand2")
         settings_btn.pack(side=tk.RIGHT, padx=(5, 15), pady=10)
         
         # Tab control
-        tab_container = tk.Frame(self.root, bg="#1e1e1e")
+        tab_container = tk.Frame(self.root, bg=self.colors['bg_primary'])
         tab_container.pack(fill=tk.BOTH, expand=True)
         
         # Create notebook (tab control)
         style = ttk.Style()
         style.theme_use('default')
-        style.configure('TNotebook', background='#1e1e1e', borderwidth=0)
-        style.configure('TNotebook.Tab', background='#2d2d2d', foreground='white', 
+        style.configure('TNotebook', background=self.colors['bg_primary'], borderwidth=0)
+        style.configure('TNotebook.Tab', background=self.colors['bg_secondary'], foreground=self.colors['text_primary'], 
                        padding=[20, 10], font=('Arial', 10), focuscolor='none')
-        style.map('TNotebook.Tab', background=[('selected', '#0078d4')], 
-                 foreground=[('selected', 'white')],
+        style.map('TNotebook.Tab', background=[('selected', self.colors['accent_blue'])], 
+                 foreground=[('selected', self.colors['text_primary'])],
                  focuscolor=[('selected', 'none')])
         
         # Combobox styling
         style.configure('TCombobox', 
-                       fieldbackground='#1e1e1e', 
-                       background='#2d2d2d', 
-                       foreground='white',
-                       arrowcolor='white',
-                       bordercolor='#4a4a4a',
-                       lightcolor='#2d2d2d',
-                       darkcolor='#2d2d2d',
-                       selectbackground='#0078d4',
-                       selectforeground='white')
+                       fieldbackground=self.colors['bg_primary'], 
+                       background=self.colors['bg_secondary'], 
+                       foreground=self.colors['text_primary'],
+                       arrowcolor=self.colors['text_primary'],
+                       bordercolor=self.colors['border'],
+                       lightcolor=self.colors['bg_secondary'],
+                       darkcolor=self.colors['bg_secondary'],
+                       selectbackground=self.colors['accent_blue'],
+                       selectforeground=self.colors['text_primary'])
         style.map('TCombobox', 
-                 fieldbackground=[('readonly', '#1e1e1e')],
-                 selectbackground=[('readonly', '#1e1e1e')],
-                 selectforeground=[('readonly', 'white')])
+                 fieldbackground=[('readonly', self.colors['bg_primary'])],
+                 selectbackground=[('readonly', self.colors['bg_primary'])],
+                 selectforeground=[('readonly', self.colors['text_primary'])])
         
         self.notebook = ttk.Notebook(tab_container)
         self.notebook.pack(fill=tk.BOTH, expand=True)
         
         # Accounts Tab
-        self.accounts_tab = tk.Frame(self.notebook, bg="#1e1e1e")
+        self.accounts_tab = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
         self.notebook.add(self.accounts_tab, text="Accounts")
         
         # Setup accounts tab content
         self.setup_accounts_tab()
         
         # Match History Tab
-        self.match_history_tab = tk.Frame(self.notebook, bg="#1e1e1e")
+        self.match_history_tab = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
         self.notebook.add(self.match_history_tab, text="Match History")
         
         # Setup match history tab content
         self.setup_match_history_tab()
         
         # Live Game Tab
-        self.live_game_tab = tk.Frame(self.notebook, bg="#1e1e1e")
+        self.live_game_tab = tk.Frame(self.notebook, bg=self.colors['bg_primary'])
         self.notebook.add(self.live_game_tab, text="Live Game")
         
         # Setup live game tab content
@@ -138,13 +244,13 @@ class MainWindow:
     def setup_accounts_tab(self):
         """Setup the accounts tab with buttons and account grid"""
         # Buttons frame at top of accounts tab - reduced height
-        btn_frame = tk.Frame(self.accounts_tab, bg="#2c2c2c", height=45)
+        btn_frame = tk.Frame(self.accounts_tab, bg=self.colors['bg_secondary'], height=45)
         btn_frame.pack(fill=tk.X, side=tk.TOP)
         btn_frame.pack_propagate(False)
         
         # Sort control on the left
         sort_label = tk.Label(btn_frame, text="Sort by:", 
-                             font=("Arial", 9), bg="#2c2c2c", fg="white")
+                             font=("Arial", 9), bg=self.colors['bg_secondary'], fg=self.colors['text_primary'])
         sort_label.pack(side=tk.LEFT, padx=(15, 8), pady=10)
         
         self.sort_var = tk.StringVar(value="Original Order")
@@ -160,28 +266,28 @@ class MainWindow:
         # Buttons on the right
         add_btn = tk.Button(btn_frame, text="+ Add Account", 
                            command=self.add_account,
-                           bg="#0078d4", fg="white", font=("Arial", 9),
+                           bg=self.colors['accent_blue'], fg=self.colors['text_primary'], font=("Arial", 9),
                            padx=12, pady=4, relief=tk.FLAT, cursor="hand2")
         add_btn.pack(side=tk.RIGHT, padx=(5, 15), pady=10)
         
         save_session_btn = tk.Button(btn_frame, text="💾 Save Current Session", 
                            command=self.save_current_session,
-                           bg="#28a745", fg="white", font=("Arial", 9),
+                           bg=self.colors['accent_green'], fg=self.colors['text_primary'], font=("Arial", 9),
                            padx=12, pady=4, relief=tk.FLAT, cursor="hand2")
         save_session_btn.pack(side=tk.RIGHT, padx=5, pady=10)
         
         refresh_all_btn = tk.Button(btn_frame, text="🔄 Refresh All", 
                            command=self.refresh_all_accounts,
-                           bg="#17a2b8", fg="white", font=("Arial", 9),
+                           bg=self.colors['bg_tertiary'], fg=self.colors['text_primary'], font=("Arial", 9),
                            padx=12, pady=4, relief=tk.FLAT, cursor="hand2")
         refresh_all_btn.pack(side=tk.RIGHT, padx=5, pady=10)
         
         # Frame for account grid with canvas for scrolling (no scrollbar)
-        container = tk.Frame(self.accounts_tab, bg="#1e1e1e")
+        container = tk.Frame(self.accounts_tab, bg=self.colors['bg_primary'])
         container.pack(fill=tk.BOTH, expand=True)
         
-        self.accounts_canvas = tk.Canvas(container, bg="#1e1e1e", highlightthickness=0)
-        self.scrollable_frame = tk.Frame(self.accounts_canvas, bg="#1e1e1e")
+        self.accounts_canvas = tk.Canvas(container, bg=self.colors['bg_primary'], highlightthickness=0)
+        self.scrollable_frame = tk.Frame(self.accounts_canvas, bg=self.colors['bg_primary'])
         
         self.scrollable_frame.bind(
             "<Configure>",
@@ -200,13 +306,13 @@ class MainWindow:
     def setup_match_history_tab(self):
         """Setup the match history tab with account selector and refresh"""
         # Top control bar
-        control_frame = tk.Frame(self.match_history_tab, bg="#2c2c2c", height=45)
+        control_frame = tk.Frame(self.match_history_tab, bg=self.colors['bg_secondary'], height=45)
         control_frame.pack(fill=tk.X, side=tk.TOP)
         control_frame.pack_propagate(False)
         
         # Account selector label
         selector_label = tk.Label(control_frame, text="Account:", 
-                                 font=("Arial", 9, "bold"), bg="#2c2c2c", fg="white")
+                                 font=("Arial", 9, "bold"), bg=self.colors['bg_secondary'], fg=self.colors['text_primary'])
         selector_label.pack(side=tk.LEFT, padx=(15, 8), pady=10)
         
         # Account dropdown
@@ -229,7 +335,7 @@ class MainWindow:
         refresh_btn.pack(side=tk.LEFT, padx=8, pady=10)
         
         # Content area
-        self.match_history_content = tk.Frame(self.match_history_tab, bg="#1e1e1e")
+        self.match_history_content = tk.Frame(self.match_history_tab, bg=self.colors['bg_primary'])
         self.match_history_content.pack(fill=tk.BOTH, expand=True)
         
         # Initial placeholder
@@ -336,13 +442,13 @@ class MainWindow:
     def setup_live_game_tab(self):
         """Setup the live game tab with account selector and refresh"""
         # Top control bar - reduced height
-        control_frame = tk.Frame(self.live_game_tab, bg="#2c2c2c", height=45)
+        control_frame = tk.Frame(self.live_game_tab, bg=self.colors['bg_secondary'], height=45)
         control_frame.pack(fill=tk.X, side=tk.TOP)
         control_frame.pack_propagate(False)
         
         # Account selector label
         selector_label = tk.Label(control_frame, text="Account:", 
-                                 font=("Arial", 9, "bold"), bg="#2c2c2c", fg="white")
+                                 font=("Arial", 9, "bold"), bg=self.colors['bg_secondary'], fg=self.colors['text_primary'])
         selector_label.pack(side=tk.LEFT, padx=(15, 8), pady=10)
         
         # Account dropdown
@@ -372,7 +478,7 @@ class MainWindow:
         test_btn.pack(side=tk.LEFT, padx=5, pady=10)
         
         # Content area (no scrollbar)
-        self.live_game_content = tk.Frame(self.live_game_tab, bg="#1e1e1e")
+        self.live_game_content = tk.Frame(self.live_game_tab, bg=self.colors['bg_primary'])
         self.live_game_content.pack(fill=tk.BOTH, expand=True)
         
         # Initial placeholder
@@ -582,7 +688,7 @@ class MainWindow:
     
     def open_settings(self):
         """Open settings dialog"""
-        dialog = SettingsDialog(self.root)
+        dialog = SettingsDialog(self.root, theme_callback=self.refresh_theme)
         self.root.wait_window(dialog.dialog)
         # Reload API key and fetchers in case settings changed
         api_key = get_api_key()
